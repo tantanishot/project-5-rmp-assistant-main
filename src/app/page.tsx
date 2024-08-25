@@ -1,6 +1,17 @@
 'use client'
 import { Box, Button, Stack, TextField } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState, useRef} from 'react'
+
+function validUrl (message : string) {
+  let url;
+  try {
+    url = new URL(message);
+  } catch(_) {
+    return false;
+  }
+
+  return url.protocol === "http:" || url.protocol === "https:";
+}
 
 export default function Home() {
   const [messages, setMessages] = useState([
@@ -9,7 +20,15 @@ export default function Home() {
       content: `Hi! I'm the Rate My Professor support assistant. How can I help you today?`,
     },
   ])
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState('');
+
+  const bottomScroll = useRef(null);
+
+  useEffect(() => {
+    if (bottomScroll.current) {
+      bottomScroll.current.scrollIntoView({behavior: 'smooth'});
+    }
+  }, [messages]);
 
   const sendMessage = async () => {
     setMessage('')
@@ -18,34 +37,56 @@ export default function Home() {
       {role: 'user', content: message},
       {role: 'assistant', content: ''},
     ])
-  
-    const response = fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify([...messages, {role: 'user', content: message}]),
-    }).then(async (res) => {
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let result = ''
-  
-      return reader.read().then(function processText({done, value}) {
-        if (done) {
-          return result
-        }
-        const text = decoder.decode(value || new Uint8Array(), {stream: true})
-        setMessages((messages) => {
-          let lastMessage = messages[messages.length - 1]
-          let otherMessages = messages.slice(0, messages.length - 1)
-          return [
-            ...otherMessages,
-            {...lastMessage, content: lastMessage.content + text},
-          ]
-        })
-        return reader.read().then(processText)
+    
+    if (validUrl(message)) {
+      const response = fetch('/api/link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([...messages, {role: 'user', content: message}]),
       })
-    })
+
+      setMessages((messages) => {
+        let lastMessage = messages[messages.length - 1]
+        let otherMessages = messages.slice(0, messages.length - 1)
+        return [
+          ...otherMessages,
+          {...lastMessage, content: lastMessage.content + message},
+        ]
+      })
+      return
+    } else {
+      const response = fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([...messages, {role: 'user', content: message}]),
+      }).then(async (res) => {
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let result = ''
+    
+        return reader.read().then(function processText({done, value}) {
+          if (done) {
+            return result
+          }
+          const text = decoder.decode(value || new Uint8Array(), {stream: true})
+          setMessages((messages) => {
+            let lastMessage = messages[messages.length - 1]
+            let otherMessages = messages.slice(0, messages.length - 1)
+            return [
+              ...otherMessages,
+              {...lastMessage, content: lastMessage.content + text},
+            ]
+          })
+          return reader.read().then(processText)
+        })
+      })
+    }
+
+    
   }
 
   return (
@@ -61,9 +102,8 @@ export default function Home() {
         direction={'column'}
         width="500px"
         height="700px"
-        border="1px solid black"
         borderRadius="16px"
-        boxShadow="0 0 100px skyBlue"
+        boxShadow="0 0 150px skyBlue"
         p={2}
         spacing={3}
       >
@@ -83,7 +123,7 @@ export default function Home() {
               }
             >
               <Box
-                maxWidth="85%"
+                maxWidth="75%"
                 bgcolor={
                   message.role === 'assistant'
                     ? 'primary.light'
@@ -99,6 +139,7 @@ export default function Home() {
               </Box>
             </Box>
           ))}
+          <div ref={bottomScroll}></div>
         </Stack>
         <Stack direction={'row'} spacing={2}>
           <TextField

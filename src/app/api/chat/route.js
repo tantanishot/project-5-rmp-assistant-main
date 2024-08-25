@@ -9,7 +9,7 @@ Use them to answer the question if needed.
 `
 
 export async function POST(req) {
-    console.log('Received POST'); 
+    console.log('Received POST -> chat'); 
     if (req.method !== 'POST') {
         return new NextResponse(JSON.stringify({ error: "Method not allowed" }), {
             status: 405,
