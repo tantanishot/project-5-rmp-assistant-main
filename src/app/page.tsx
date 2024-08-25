@@ -62,6 +62,8 @@ export default function Home() {
         width="500px"
         height="700px"
         border="1px solid black"
+        borderRadius="16px"
+        boxShadow="0 0 100px skyBlue"
         p={2}
         spacing={3}
       >
@@ -81,13 +83,16 @@ export default function Home() {
               }
             >
               <Box
+                maxWidth="85%"
                 bgcolor={
                   message.role === 'assistant'
-                    ? 'primary.main'
-                    : 'secondary.main'
+                    ? 'primary.light'
+                    : 'error.light'
+                }
+                borderRadius= {
+                  message.role === 'assistant' ? "16px 16px 16px 0px" : "16px 16px 0px 16px"
                 }
                 color="white"
-                borderRadius={16}
                 p={3}
               >
                 {message.content}
@@ -101,6 +106,13 @@ export default function Home() {
             fullWidth
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(ev) => {
+              console.log(`Pressed keyCode ${ev.key}`);
+              if (ev.key === 'Enter') {
+                sendMessage()
+                ev.preventDefault()
+              }
+            }}
           />
           <Button variant="contained" onClick={sendMessage}>
             Send

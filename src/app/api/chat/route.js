@@ -12,8 +12,8 @@ export async function POST(req) {
     console.log('Received POST'); 
     if (req.method !== 'POST') {
         return new NextResponse(JSON.stringify({ error: "Method not allowed" }), {
-          status: 405,
-          headers: { 'Content-Type': 'application/json' },
+            status: 405,
+            headers: { 'Content-Type': 'application/json' },
         });
     }
     try {
@@ -27,13 +27,13 @@ export async function POST(req) {
             baseURL: "https://openrouter.ai/api/v1",
             apiKey: process.env.OPENROUTER_API_KEY
         });
-  
+
         const data = await req.json();
         console.log('Request body:', data); 
         if (!Array.isArray(data) || data.length === 0) {
             throw new Error('Invalid request body');
         }
-  
+
         const text = data[data.length - 1].content;
         console.log('Text:', text);
         
@@ -42,7 +42,7 @@ export async function POST(req) {
         //     input: text,
         //     encoding_format: 'float',
         // });
-  
+
         console.log('Prior results');
         const results = await index.query({
             topK: 5,
@@ -50,7 +50,7 @@ export async function POST(req) {
             // vector: embedding.data[0].embedding,
         });
         console.log('Past results:', results); 
-  
+
         let resultString = '';
         results.matches.forEach((match) => {
             resultString += `
@@ -65,7 +65,7 @@ export async function POST(req) {
         const lastMessage = data[data.length - 1];
         const lastMessageContent = lastMessage.content + resultString;
         const lastDataWithoutLastMessage = data.slice(0, data.length - 1);
-  
+
         const completion = await openai.chat.completions.create({
             messages: [
             {role: 'system', content: systemPrompt},
@@ -97,10 +97,10 @@ export async function POST(req) {
         });
         return new NextResponse(stream);
     } catch (error) {
-      console.error('API route error:', error);
-      return new NextResponse(JSON.stringify({ error: error.message }), {
+        console.error('API route error:', error);
+        return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
-      });
+        });
     }
-  }
+}
