@@ -1,23 +1,7 @@
 import { NextResponse } from 'next/server'
 import { Pinecone } from '@pinecone-database/pinecone'
-
-const playwright = require('playwright');
-
-const scrape = async (page) => {
-    return page.$$eval("article.border", (repoCards) => {
-        return repoCards.map((card) => {
-            const [user, repo] = card.querySelectorAll("h3 a");
-            const detail = card.querySelector("p");
-            const formatText = (element) => element && element.innerText.trim();
-            return {
-            user: formatText(user),
-            repo: formatText(repo),
-            url: repo.href,
-            detail: formatText(detail),
-            };
-        });
-    });
-};
+//puppeteer instead of  playwright
+import puppeteer from 'puppeteer';
 
 export async function POST(req){
     console.log('Recieved POST -> link');
@@ -43,26 +27,29 @@ export async function POST(req){
         const link = data[data.length - 1].content;
         console.log('Link:', link);
 
-        const browser = await playwright.chromium.launch({ headless: true });
-        const context = await browser.newContext({
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
-        });
-        const page = await context.newPage();
+        const browser = await puppeteer.launch({ headless: true });
+        const page = await browser.newPage();
+
+        
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36');
+
+        
+        //specific professor page
         await page.goto('https://www.ratemyprofessors.com/professor/1109134');
 
-        const scoreLocation = page.locator(".RatingValue_Numerator-qw8sqy-2.liyUjw");
-        const score = await scoreLocation.textContent();
+        //selecting and extracting the score
+        const score = await page.$eval(".RatingValue_Numerator-qw8sqy-2.liyUjw", element => element.textContent);
         console.log('score:', score);
 
         await browser.close();
 
-        return new NextResponse(JSON.stringify({"status" : "link accessed"}));
+        return new NextResponse(JSON.stringify({ "status": "link accessed", "score": score }));
 
     } catch (error) {
         console.error('API route error:', error);
         return new NextResponse(JSON.stringify({ error: error.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
         });
     }
 }
