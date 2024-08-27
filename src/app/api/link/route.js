@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { Pinecone } from '@pinecone-database/pinecone'
-//puppeteer instead of  playwright
+//puppeteer instead of playwright
 import puppeteer from 'puppeteer';
 
 export async function POST(req){
