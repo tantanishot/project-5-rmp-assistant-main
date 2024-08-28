@@ -53,6 +53,7 @@ export default function Home() {
 
       const data = await response.json(); 
       const rating = data.score; 
+      const prof = data.name;
 
       const returnedResponse = await fetch('/api/chat', {
         method: 'POST', 
@@ -61,7 +62,7 @@ export default function Home() {
         },
         body: JSON.stringify([...messages, {role: 'user', content: message},
           {role: 'user', content: message},
-          {role: 'system', content: `The professor's rating is ${rating}.`}
+          {role: 'system', content: `Professor ${prof} has a rating of ${rating}`}
         ]),
       }).then(async (res) => {
         const reader = res.body.getReader()
@@ -83,15 +84,6 @@ export default function Home() {
           })
           return reader.read().then(processText)
         })
-      })
-
-      setMessages((messages) => {
-        let lastMessage = messages[messages.length - 1]
-        let otherMessages = messages.slice(0, messages.length - 1)
-        return [
-          ...otherMessages,
-          {...lastMessage, content: lastMessage.content + message},
-        ]
       })
       return
     } else {

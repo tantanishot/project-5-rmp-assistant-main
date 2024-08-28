@@ -42,9 +42,12 @@ export async function POST(req) {
           return ratingElement ? ratingElement.textContent.trim() : 'N/A';
         });
 
-        console.log('score:', rating);
+        const prof = await page.evaluate(() => {
+            const profElement = document.querySelector('.NameTitle__Name-dowf0z-0');
+            return profElement ? profElement.textContent.trim() : 'N/A';
+        });
 
-        return new NextResponse(JSON.stringify({ "status": "link accessed", "score": rating }), {
+        return new NextResponse(JSON.stringify({ "status": "link accessed", "score": rating, "name": prof }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
         });
