@@ -1,12 +1,12 @@
 'use client'
 import { Box, Button, Stack, TextField } from '@mui/material'
-import { useEffect, useState, useRef} from 'react'
+import { useEffect, useState, useRef } from 'react'
 
-function validUrl (message : string) {
+function validUrl(message: string) {
   let url;
   try {
     url = new URL(message);
-  } catch(_) {
+  } catch (_) {
     return false;
   }
 
@@ -19,105 +19,121 @@ export default function Home() {
       role: 'assistant',
       content: `Hi! I'm the Rate My Professor support assistant. How can I help you today?`,
     },
-  ])
+  ]);
   const [message, setMessage] = useState('');
 
-  const bottomScroll = useRef(null);
+  const bottomScroll = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (bottomScroll.current) {
-      bottomScroll.current.scrollIntoView({behavior: 'smooth'});
+      bottomScroll.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
   const sendMessage = async () => {
-    setMessage('')
+    setMessage('');
     setMessages((messages) => [
       ...messages,
-      {role: 'user', content: message},
-      {role: 'assistant', content: ''},
-    ])
-    
+      { role: 'user', content: message },
+      { role: 'assistant', content: '' },
+    ]);
+
     if (validUrl(message)) {
       const response = await fetch('/api/link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify([...messages, {role: 'user', content: message}]),
-      })
+        body: JSON.stringify([...messages, { role: 'user', content: message }]),
+      });
 
       if (!response.ok) {
-        console.log("response not ok"); 
+        console.log("response not ok");
       }
 
-      const data = await response.json(); 
-      const rating = data.score; 
+      const data = await response.json();
+      const rating = data.score;
       const prof = data.name;
 
       const returnedResponse = await fetch('/api/chat', {
-        method: 'POST', 
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify([...messages, {role: 'user', content: message},
-          {role: 'user', content: message},
-          {role: 'system', content: `Professor ${prof} has a rating of ${rating}`}
+        body: JSON.stringify([
+          ...messages,
+          { role: 'user', content: message },
+          { role: 'system', content: `Professor ${prof} has a rating of ${rating}` }
         ]),
       }).then(async (res) => {
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let result = ''
-    
-        return reader.read().then(function processText({done, value}) {
-          if (done) {
-            return result
-          }
-          const text = decoder.decode(value || new Uint8Array(), {stream: true})
-          setMessages((messages) => {
-            let lastMessage = messages[messages.length - 1]
-            let otherMessages = messages.slice(0, messages.length - 1)
-            return [
-              ...otherMessages,
-              {...lastMessage, content: lastMessage.content + text},
-            ]
-          })
-          return reader.read().then(processText)
-        })
-      })
-      return
+        if (res.body) {
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let result = '';
+
+          return reader.read().then(function processText({ done, value }): Promise<string> {
+            return new Promise((resolve) => {
+              if (done) {
+                resolve(result);
+              } else {
+                const text = decoder.decode(value || new Uint8Array(), { stream: true });
+                setMessages((messages) => {
+                  let lastMessage = messages[messages.length - 1];
+                  let otherMessages = messages.slice(0, messages.length - 1);
+                  return [
+                    ...otherMessages,
+                    { ...lastMessage, content: lastMessage.content + text },
+                  ];
+                });
+                result += text;
+                resolve(result);
+                return reader.read().then(processText);
+              }
+            });
+          });
+        } else {
+          console.log("res body is null");
+        }
+      });
+
+      return;
     } else {
       const response = fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify([...messages, {role: 'user', content: message}]),
+        body: JSON.stringify([...messages, { role: 'user', content: message }]),
       }).then(async (res) => {
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let result = ''
-    
-        return reader.read().then(function processText({done, value}) {
-          if (done) {
-            return result
-          }
-          const text = decoder.decode(value || new Uint8Array(), {stream: true})
-          setMessages((messages) => {
-            let lastMessage = messages[messages.length - 1]
-            let otherMessages = messages.slice(0, messages.length - 1)
-            return [
-              ...otherMessages,
-              {...lastMessage, content: lastMessage.content + text},
-            ]
-          })
-          return reader.read().then(processText)
-        })
-      })
-    }
+        if (res.body) {
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let result = '';
 
-    
-  }
+          return reader.read().then(function processText({ done, value }): Promise<string> {
+            return new Promise((resolve) => {
+              if (done) {
+                resolve(result);
+              } else {
+                const text = decoder.decode(value || new Uint8Array(), { stream: true });
+                setMessages((messages) => {
+                  let lastMessage = messages[messages.length - 1];
+                  let otherMessages = messages.slice(0, messages.length - 1);
+                  return [
+                    ...otherMessages,
+                    { ...lastMessage, content: lastMessage.content + text },
+                  ];
+                });
+                result += text;
+                resolve(result);
+                return reader.read().then(processText);
+              }
+            });
+          });
+        }
+      });
+    }
+  };
 
   return (
     <Box
@@ -159,7 +175,7 @@ export default function Home() {
                     ? 'primary.light'
                     : 'error.light'
                 }
-                borderRadius= {
+                borderRadius={
                   message.role === 'assistant' ? "16px 16px 16px 0px" : "16px 16px 0px 16px"
                 }
                 color="white"
@@ -178,10 +194,9 @@ export default function Home() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(ev) => {
-              // console.log(`Pressed keyCode ${ev.key}`);
               if (ev.key === 'Enter') {
-                sendMessage()
-                ev.preventDefault()
+                sendMessage();
+                ev.preventDefault();
               }
             }}
           />
@@ -191,5 +206,5 @@ export default function Home() {
         </Stack>
       </Stack>
     </Box>
-  )
+  );
 }
